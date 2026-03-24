@@ -1,0 +1,132 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  username      String    @unique
+  email         String    @unique
+  passwordHash  String
+  displayName   String
+  bio           String?
+  avatarUrl     String?
+  role          Role      @default(USER)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  posts         Post[]
+  comments      Comment[]
+  likes         Like[]
+  following     Follow[]  @relation("Following")
+  followers     Follow[]  @relation("Followers")
+  communities   CommunityMembership[]
+  reports       Report[]  @relation("Reporter")
+  reportedPosts Report[]  @relation("ReportedUser")
+  notifications Notification[]
+}
+
+enum Role {
+  USER
+  MODERATOR
+  ADMIN
+}
+
+model Post {
+  id          String    @id @default(cuid())
+  content     String
+  imageUrl    String?
+  authorId    String
+  communityId String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  author      User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  community   Community? @relation(fields: [communityId], references: [id])
+  comments    Comment[]
+  likes       Like[]
+  reports     Report[]
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  content   String
+  authorId  String
+  postId    String
+  createdAt DateTime @default(now())
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+}
+
+model Like {
+  id        String   @id @default(cuid())
+  userId    String
+  postId    String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  @@unique([userId, postId])
+}
+
+model Follow {
+  id          String   @id @default(cuid())
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+  follower    User     @relation("Following", fields: [followerId], references: [id], onDelete: Cascade)
+  following   User     @relation("Followers", fields: [followingId], references: [id], onDelete: Cascade)
+  @@unique([followerId, followingId])
+}
+
+model Community {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  imageUrl    String?
+  createdAt   DateTime @default(now())
+  members     CommunityMembership[]
+  posts       Post[]
+}
+
+model CommunityMembership {
+  id          String    @id @default(cuid())
+  userId      String
+  communityId String
+  role        MemberRole @default(MEMBER)
+  joinedAt    DateTime  @default(now())
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  @@unique([userId, communityId])
+}
+
+enum MemberRole {
+  MEMBER
+  MODERATOR
+  OWNER
+}
+
+model Report {
+  id           String   @id @default(cuid())
+  reason       String
+  reporterId   String
+  postId       String?
+  userId       String?
+  resolved     Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  reporter     User     @relation("Reporter", fields: [reporterId], references: [id])
+  post         Post?    @relation(fields: [postId], references: [id])
+  reportedUser User?    @relation("ReportedUser", fields: [userId], references: [id])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
