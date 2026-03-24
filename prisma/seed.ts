@@ -80,7 +80,7 @@ async function main() {
       communityId: generalCommunity.id,
     },
     {
-      content: 'Hot take: TypeScript is the best thing to happen to JavaScript. The developer experience with Prisma + Next.js 14 is absolutely insane right now.',
+      content: 'Hot take: TypeScript is the best thing to happen to JavaScript. The developer experience with Prisma + Next.js 15 is absolutely insane right now.',
       authorId: demo.id,
       communityId: techCommunity.id,
     },

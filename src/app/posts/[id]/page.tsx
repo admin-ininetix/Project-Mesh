@@ -10,12 +10,13 @@ import type { Metadata } from 'next'
 import type { Post } from '@/types'
 
 interface Props {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { id } = await params
   const post = await prisma.post.findUnique({
-    where: { id: params.id },
+    where: { id },
     select: {
       content: true,
       author: { select: { displayName: true, username: true } },
@@ -62,7 +63,8 @@ async function getPost(id: string) {
 }
 
 export default async function PostPage({ params }: Props) {
-  const post = await getPost(params.id)
+  const { id } = await params
+  const post = await getPost(id)
 
   if (!post) notFound()
 

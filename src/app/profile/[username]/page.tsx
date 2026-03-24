@@ -9,19 +9,20 @@ import type { Metadata } from 'next'
 import type { Post } from '@/types'
 
 interface Props {
-  params: { username: string }
+  params: Promise<{ username: string }>
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { username } = await params
   const user = await prisma.user.findUnique({
-    where: { username: params.username.toLowerCase() },
+    where: { username: username.toLowerCase() },
     select: { displayName: true, bio: true },
   })
 
   if (!user) return { title: 'User not found' }
 
   return {
-    title: `${user.displayName} (@${params.username}) — Project Mesh`,
+    title: `${user.displayName} (@${username}) — Project Mesh`,
     description: user.bio || `${user.displayName}'s profile on Project Mesh`,
   }
 }
@@ -72,7 +73,8 @@ async function getUserPosts(userId: string) {
 }
 
 export default async function ProfilePage({ params }: Props) {
-  const user = await getUserProfile(params.username)
+  const { username } = await params
+  const user = await getUserProfile(username)
   if (!user) notFound()
 
   const posts = await getUserPosts(user.id)

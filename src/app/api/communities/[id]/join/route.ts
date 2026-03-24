@@ -5,16 +5,17 @@ import { authOptions } from '@/lib/auth'
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const community = await prisma.community.findFirst({
-      where: { OR: [{ id: params.id }, { slug: params.id }] },
+      where: { OR: [{ id }, { slug: id }] },
     })
     if (!community) {
       return NextResponse.json({ error: 'Community not found' }, { status: 404 })
@@ -40,16 +41,17 @@ export async function POST(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const community = await prisma.community.findFirst({
-      where: { OR: [{ id: params.id }, { slug: params.id }] },
+      where: { OR: [{ id }, { slug: id }] },
     })
     if (!community) {
       return NextResponse.json({ error: 'Community not found' }, { status: 404 })

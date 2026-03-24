@@ -5,15 +5,16 @@ import { authOptions } from '@/lib/auth'
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const post = await prisma.post.findUnique({ where: { id: params.id } })
+    const post = await prisma.post.findUnique({ where: { id } })
     if (!post) {
       return NextResponse.json({ error: 'Post not found' }, { status: 404 })
     }
@@ -21,7 +22,7 @@ export async function POST(
     const like = await prisma.like.create({
       data: {
         userId: session.user.id,
-        postId: params.id,
+        postId: id,
       },
     })
 
@@ -37,9 +38,10 @@ export async function POST(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -48,7 +50,7 @@ export async function DELETE(
     await prisma.like.deleteMany({
       where: {
         userId: session.user.id,
-        postId: params.id,
+        postId: id,
       },
     })
 

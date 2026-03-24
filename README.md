@@ -1,6 +1,6 @@
 # Project Mesh 🌐
 
-A modern, production-ready social media platform built with Next.js 14, TypeScript, PostgreSQL, and Prisma.
+A modern, production-ready social media platform built with Next.js 15, TypeScript, PostgreSQL, and Prisma.
 
 ## Features
 
@@ -16,7 +16,7 @@ A modern, production-ready social media platform built with Next.js 14, TypeScri
 
 | Layer | Technology |
 |-------|-----------|
-| Framework | Next.js 14 (App Router) |
+| Framework | Next.js 15 (App Router) |
 | Language | TypeScript |
 | Database | PostgreSQL |
 | ORM | Prisma |

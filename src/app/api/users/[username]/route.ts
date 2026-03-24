@@ -5,13 +5,14 @@ import { authOptions } from '@/lib/auth'
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { username: string } }
+  { params }: { params: Promise<{ username: string }> }
 ) {
   try {
+    const { username } = await params
     const session = await getServerSession(authOptions)
 
     const user = await prisma.user.findUnique({
-      where: { username: params.username.toLowerCase() },
+      where: { username: username.toLowerCase() },
       select: {
         id: true,
         username: true,

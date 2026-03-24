@@ -32,12 +32,13 @@ const postSelect = {
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const session = await getServerSession(authOptions)
     const post = await prisma.post.findUnique({
-      where: { id: params.id },
+      where: { id },
       select: postSelect,
     })
 
@@ -49,7 +50,7 @@ export async function GET(
     if (session?.user?.id) {
       const like = await prisma.like.findUnique({
         where: {
-          userId_postId: { userId: session.user.id, postId: params.id },
+          userId_postId: { userId: session.user.id, postId: id },
         },
       })
       isLiked = !!like
@@ -64,16 +65,17 @@ export async function GET(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const post = await prisma.post.findUnique({
-      where: { id: params.id },
+      where: { id },
       select: { authorId: true },
     })
 
@@ -90,7 +92,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    await prisma.post.delete({ where: { id: params.id } })
+    await prisma.post.delete({ where: { id } })
 
     return NextResponse.json({ success: true })
   } catch (error) {

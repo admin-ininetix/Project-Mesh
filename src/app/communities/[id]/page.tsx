@@ -7,12 +7,13 @@ import type { Metadata } from 'next'
 import type { Post } from '@/types'
 
 interface Props {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { id } = await params
   const community = await prisma.community.findFirst({
-    where: { OR: [{ id: params.id }, { slug: params.id }] },
+    where: { OR: [{ id }, { slug: id }] },
     select: { name: true, description: true },
   })
 
@@ -70,7 +71,8 @@ async function getCommunityPosts(communityId: string) {
 }
 
 export default async function CommunityPage({ params }: Props) {
-  const community = await getCommunityData(params.id)
+  const { id } = await params
+  const community = await getCommunityData(id)
   if (!community) notFound()
 
   const posts = await getCommunityPosts(community.id)

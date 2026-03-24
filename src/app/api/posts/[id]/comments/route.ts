@@ -6,16 +6,17 @@ import { authOptions } from '@/lib/auth'
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const post = await prisma.post.findUnique({ where: { id: params.id } })
+    const { id } = await params
+    const post = await prisma.post.findUnique({ where: { id } })
     if (!post) {
       return NextResponse.json({ error: 'Post not found' }, { status: 404 })
     }
 
     const comments = await prisma.comment.findMany({
-      where: { postId: params.id },
+      where: { postId: id },
       orderBy: { createdAt: 'asc' },
       select: {
         id: true,
@@ -48,15 +49,16 @@ const commentSchema = z.object({
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const post = await prisma.post.findUnique({ where: { id: params.id } })
+    const post = await prisma.post.findUnique({ where: { id } })
     if (!post) {
       return NextResponse.json({ error: 'Post not found' }, { status: 404 })
     }
@@ -72,7 +74,7 @@ export async function POST(
       data: {
         content: result.data.content,
         authorId: session.user.id,
-        postId: params.id,
+        postId: id,
       },
       select: {
         id: true,
