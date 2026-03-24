@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { formatDate } from "@/lib/utils";
+import { AdminReportItem } from "@/components/AdminReportItem";
+import { AdminUserRoleSelect } from "@/components/AdminUserRoleSelect";
 
 export const metadata = {
   title: "Admin Panel",
@@ -32,20 +34,21 @@ export default async function AdminPage() {
     }),
   ]);
 
-  const recentUsers = session.user.role === "admin"
-    ? await prisma.user.findMany({
-        where: { deletedAt: null },
-        orderBy: { createdAt: "desc" },
-        take: 10,
-        select: {
-          id: true,
-          username: true,
-          email: true,
-          role: true,
-          createdAt: true,
-        },
-      })
-    : [];
+  const recentUsers =
+    session.user.role === "admin"
+      ? await prisma.user.findMany({
+          where: { deletedAt: null },
+          orderBy: { createdAt: "desc" },
+          take: 10,
+          select: {
+            id: true,
+            username: true,
+            email: true,
+            role: true,
+            createdAt: true,
+          },
+        })
+      : [];
 
   return (
     <div className="container-wide py-8">
@@ -77,20 +80,14 @@ export default async function AdminPage() {
         {pendingReports.length === 0 ? (
           <p className="text-gray-400 text-sm">Keine offenen Meldungen ✓</p>
         ) : (
-          <div className="space-y-3">
-            {pendingReports.map((report) => (
-              <ReportItem key={report.id} report={report} />
-            ))}
-          </div>
+          <PendingReportsList reports={pendingReports} />
         )}
       </div>
 
       {/* User Management (admin only) */}
       {session.user.role === "admin" && (
         <div className="card p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            Neueste Nutzer
-          </h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Neueste Nutzer</h2>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -116,7 +113,7 @@ export default async function AdminPage() {
                     </td>
                     <td className="py-2 text-gray-500">{formatDate(user.createdAt)}</td>
                     <td className="py-2">
-                      <AdminUserActions userId={user.id} currentRole={user.role} />
+                      <AdminUserRoleSelect userId={user.id} currentRole={user.role} />
                     </td>
                   </tr>
                 ))}
@@ -138,10 +135,10 @@ function RoleBadge({ role }: { role: string }) {
   return <span className={styles[role] ?? "badge badge-gray"}>{role}</span>;
 }
 
-function ReportItem({
-  report,
+function PendingReportsList({
+  reports,
 }: {
-  report: {
+  reports: {
     id: string;
     reason: string;
     status: string;
@@ -149,92 +146,13 @@ function ReportItem({
     reporter: { username: string };
     post: { id: string; content: string; authorId: string } | null;
     comment: { id: string; content: string } | null;
-  };
+  }[];
 }) {
   return (
-    <div className="flex items-start gap-3 p-3 bg-red-50 rounded-lg border border-red-100">
-      <span className="text-lg">🚨</span>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-gray-900">
-          Gemeldet von @{report.reporter.username}
-        </p>
-        <p className="text-sm text-gray-600">Grund: {report.reason}</p>
-        {report.post && (
-          <p className="text-xs text-gray-500 mt-1 truncate">
-            Post: {report.post.content.slice(0, 80)}...
-          </p>
-        )}
-        {report.comment && (
-          <p className="text-xs text-gray-500 mt-1 truncate">
-            Kommentar: {report.comment.content.slice(0, 80)}...
-          </p>
-        )}
-        <p className="text-xs text-gray-400 mt-1">{formatDate(report.createdAt)}</p>
-      </div>
-      <ReportActions reportId={report.id} />
-    </div>
-  );
-}
-
-function ReportActions({ reportId }: { reportId: string }) {
-  return (
-    <div className="flex gap-2">
-      <form action={`/api/admin/reports`} method="POST">
-        <input type="hidden" name="id" value={reportId} />
-        <input type="hidden" name="status" value="resolved" />
-        <button
-          type="submit"
-          className="btn btn-sm bg-green-100 text-green-700 hover:bg-green-200"
-          onClick={async (e) => {
-            e.preventDefault();
-            await fetch("/api/admin/reports", {
-              method: "PUT",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ id: reportId, status: "resolved" }),
-            });
-            window.location.reload();
-          }}
-        >
-          Lösen
-        </button>
-      </form>
-      <button
-        className="btn btn-sm bg-gray-100 text-gray-600 hover:bg-gray-200"
-        onClick={async () => {
-          await fetch("/api/admin/reports", {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ id: reportId, status: "dismissed" }),
-          });
-          window.location.reload();
-        }}
-      >
-        Ablehnen
-      </button>
-    </div>
-  );
-}
-
-function AdminUserActions({ userId, currentRole }: { userId: string; currentRole: string }) {
-  const roles = ["user", "moderator", "admin"];
-  return (
-    <select
-      defaultValue={currentRole}
-      className="text-xs border border-gray-200 rounded px-1 py-0.5"
-      onChange={async (e) => {
-        await fetch("/api/admin/users", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId, role: e.target.value }),
-        });
-        window.location.reload();
-      }}
-    >
-      {roles.map((r) => (
-        <option key={r} value={r}>
-          {r}
-        </option>
+    <div className="space-y-3">
+      {reports.map((report) => (
+        <AdminReportItem key={report.id} report={report} />
       ))}
-    </select>
+    </div>
   );
 }

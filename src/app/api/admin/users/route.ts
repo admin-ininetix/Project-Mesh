@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
   try {
     const where = search
       ? {
-          deletedAt: null as null,
+          deletedAt: null,
           OR: [
             { username: { contains: search, mode: "insensitive" as const } },
             { email: { contains: search, mode: "insensitive" as const } },

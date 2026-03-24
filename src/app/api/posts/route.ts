@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
 
     const where = {
       published: true,
-      deletedAt: null as null | undefined,
+      deletedAt: null,
       ...(username
         ? { author: { username } }
         : {}),
