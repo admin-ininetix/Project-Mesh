@@ -1,0 +1,32 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: mesh-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: meshuser
+      POSTGRES_PASSWORD: meshpassword
+      POSTGRES_DB: meshdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  app:
+    build: .
+    container_name: mesh-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://meshuser:meshpassword@postgres:5432/meshdb
+      NEXTAUTH_URL: http://localhost:3000
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_data:
