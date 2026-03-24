@@ -1,0 +1,261 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  user
+  moderator
+  admin
+}
+
+enum ReportStatus {
+  pending
+  reviewed
+  resolved
+  dismissed
+}
+
+enum NotificationType {
+  like
+  comment
+  follow
+  mention
+  community_post
+}
+
+enum MembershipRole {
+  member
+  moderator
+  owner
+}
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  username     String    @unique
+  passwordHash String
+  role         Role      @default(user)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+
+  profile          Profile?
+  posts            Post[]
+  comments         Comment[]
+  likes            Like[]
+  followers        Follow[]              @relation("following")
+  following        Follow[]              @relation("follower")
+  memberships      CommunityMembership[]
+  reportsSubmitted Report[]              @relation("reporter")
+  notifications    Notification[]
+  sessions         Session[]
+  accounts         Account[]
+
+  @@index([username])
+  @@index([email])
+  @@map("users")
+}
+
+model Profile {
+  id          String  @id @default(cuid())
+  userId      String  @unique
+  displayName String?
+  bio         String?
+  avatarUrl   String?
+  websiteUrl  String?
+  location    String?
+  banner      String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("profiles")
+}
+
+model Post {
+  id          String    @id @default(cuid())
+  authorId    String
+  communityId String?
+  content     String
+  imageUrl    String?
+  published   Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  author    User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  community Community? @relation(fields: [communityId], references: [id], onDelete: SetNull)
+  comments  Comment[]
+  likes     Like[]
+  reports   Report[]   @relation("postReports")
+
+  @@index([authorId])
+  @@index([communityId])
+  @@index([createdAt(sort: Desc)])
+  @@map("posts")
+}
+
+model Comment {
+  id        String    @id @default(cuid())
+  postId    String
+  authorId  String
+  content   String
+  createdAt DateTime  @default(now())
+  deletedAt DateTime?
+
+  post    Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author  User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  likes   Like[]
+  reports Report[] @relation("commentReports")
+
+  @@index([postId])
+  @@index([authorId])
+  @@map("comments")
+}
+
+model Like {
+  id        String  @id @default(cuid())
+  userId    String
+  postId    String?
+  commentId String?
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post    Post?    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  comment Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+  @@unique([userId, commentId])
+  @@index([postId])
+  @@index([commentId])
+  @@map("likes")
+}
+
+model Follow {
+  id          String   @id @default(cuid())
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+
+  follower  User @relation("follower", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("following", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+  @@map("follows")
+}
+
+model Community {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  imageUrl    String?
+  banner      String?
+  isPrivate   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  posts       Post[]
+  memberships CommunityMembership[]
+
+  @@index([slug])
+  @@map("communities")
+}
+
+model CommunityMembership {
+  id          String         @id @default(cuid())
+  userId      String
+  communityId String
+  role        MembershipRole @default(member)
+  joinedAt    DateTime       @default(now())
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, communityId])
+  @@index([userId])
+  @@index([communityId])
+  @@map("community_memberships")
+}
+
+model Report {
+  id         String       @id @default(cuid())
+  reporterId String
+  postId     String?
+  commentId  String?
+  reason     String
+  details    String?
+  status     ReportStatus @default(pending)
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  reporter User     @relation("reporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  post     Post?    @relation("postReports", fields: [postId], references: [id], onDelete: SetNull)
+  comment  Comment? @relation("commentReports", fields: [commentId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([reporterId])
+  @@map("reports")
+}
+
+model Notification {
+  id          String           @id @default(cuid())
+  userId      String
+  type        NotificationType
+  referenceId String?
+  message     String?
+  read        Boolean          @default(false)
+  createdAt   DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read])
+  @@map("notifications")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
