@@ -1,6 +1,6 @@
 # Project Mesh
 
-Eine offene Social-Media-Community-Plattform gebaut mit Next.js 14, TypeScript, PostgreSQL und Prisma.
+Eine offene Social-Media-Community-Plattform gebaut mit Next.js 15, TypeScript, PostgreSQL und Prisma.
 
 ## Features
 
@@ -61,7 +61,7 @@ docker-compose run migrate
 
 ## Tech Stack
 
-- **Frontend/Backend**: Next.js 14 (App Router)
+- **Frontend/Backend**: Next.js 15 (App Router)
 - **Sprache**: TypeScript
 - **Datenbank**: PostgreSQL
 - **ORM**: Prisma
