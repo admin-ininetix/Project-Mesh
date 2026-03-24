@@ -20,9 +20,10 @@ services:
     restart: unless-stopped
     ports:
       - "3000:3000"
+    env_file:
+      - .env
     environment:
       DATABASE_URL: postgresql://meshuser:meshpassword@postgres:5432/meshdb
-      NEXTAUTH_SECRET: change-me-in-production
       NEXTAUTH_URL: http://localhost:3000
     depends_on:
       - postgres
